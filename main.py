@@ -1,4 +1,5 @@
 import os
+import json
 import warnings
 import requests
 import pandas as pd
@@ -17,30 +18,55 @@ custom_headers = {
     "Accept": "application/json"
 }
 
-def download_ishares():
-    base_url = "https://www.blackrock.com/varnish-api/blk-one01-product-data/product-data/api/v1/get-fund-document?appType=PRODUCT_PAGE&appSubType=ISHARES&targetSite=us-ishares&locale=en_US"
+def download_iShares():
+    base_url = "https://www.ishares.com/varnish-api/blk-one01-product-data/product-data/api/v2/get-product-data?appSubType=ISHARES&appType=PRODUCT_PAGE&component=holdings.all&locale=en_US&targetSite=us-ishares&userType=individual&excludeContent=true&includeConfig=true"
 
     url_mapper = {
-        "CNDX": "https://www.ishares.com/ch/professionals/en/products/253741/ishares-nasdaq-100-ucits-etf/1495092304805.ajax?fileType=csv&fileName=CSNDX_holdings&dataType=fund",
-        "IVV": f"{base_url}&portfolioId=239726&userType=individual&component=holdings",
-        "IWB": f"{base_url}&portfolioId=239707&userType=individual&component=holdings",
-        "IWM": f"{base_url}&portfolioId=239710&userType=individual&component=holdings",
-        "IWV": f"{base_url}&portfolioId=239714&userType=individual&component=holdings"
+        "CNDX": "https://www.ishares.com/uk/individual/en/products/253741/ishares-nasdaq-100-ucits-etf/1506575576011.ajax?tab=all&fileType=json",
+        "IVV": f"{base_url}&portfolioId=239726",
+        "IWB": f"{base_url}&portfolioId=239707",
+        "IWM": f"{base_url}&portfolioId=239710",
+        "IWV": f"{base_url}&portfolioId=239714"
     }
 
-    for product, url in tqdm(url_mapper.items(), total=len(url_mapper.keys()), desc="Downloading iShares"):
+    pbar = tqdm(url_mapper.items(), total=len(url_mapper.keys()))
+    for product, url in pbar:
+        pbar.set_description(f"[iShares] Downloading {product}")
+
+        dest_dir = os.path.join(root_dir, "ishares", product)
+        if not os.path.exists(dest_dir): os.makedirs(dest_dir)
+
         try:
             response = requests.get(url=url, headers=custom_headers)
             if response.status_code != 200: raise ValueError("Invalid status code")
 
-            dest_dir = os.path.join(root_dir, "ishares", product)
-            if not os.path.exists(dest_dir): os.makedirs(dest_dir)
+            response, ticker_df = json.loads(response.content), []
 
-            with open(os.path.join(dest_dir, f"{product}_{pd.Timestamp.now().__str__().split(' ')[0]}.csv"), "wb") as f:
-                f.write(response.content)
+            if product in ["CNDX"]:
+                ticker_df = [{"ticker": arr[0], "name": arr[1], "sector": arr[2], "asset_class": arr[3], "weight": arr[5].get("raw", -1.0), "isin": arr[8]}
+                             for arr in response.get("aaData")]
 
-        except Exception as e:
-            print(f"[{product}] Error: {e}")
+            elif product in ["IVV", "IWB", "IWM", "IWV"]:
+                data_map = response.get("componentsByNameMap").get("holdings").get("containersByNameMap").get("all").get("dataPointsByNameMap")
+
+                ticker_df = [{"ticker": t, "name": n, "sector": s, "weight": w, "CUSIP": cusip, "ISIN": isin, "SEDOL": sedol}
+                             for t, n, s, w, cusip, isin, sedol, asset_class in zip(data_map.get("ticker").get("formattedValue"),
+                                                                                    data_map.get("issueName").get("formattedValue"),
+                                                                                    data_map.get("sectorName").get("formattedValue"),
+                                                                                    data_map.get("holdingPercent").get("formattedValue"),
+                                                                                    data_map.get("cusip").get("formattedValue"),
+                                                                                    data_map.get("isin").get("formattedValue"),
+                                                                                    data_map.get("sedol").get("formattedValue"),
+                                                                                    data_map.get("assetClass").get("formattedValue")) if asset_class == "Equity" and t != "-"]
+
+            ticker_df = pd.DataFrame(ticker_df)
+            if ticker_df.empty: raise ValueError(f"[{product}] No data")
+
+            ticker_df = ticker_df.sort_values(by="ticker").reset_index(drop=True)
+
+            ticker_df.to_csv(os.path.join(dest_dir, f"{product}_{pd.Timestamp.now().__str__().split(' ')[0]}.csv"), index=False)
+
+        except Exception as e: print(f"[{product}] Error: {e}")
 
 def download_finviz():
     finviz_dir = os.path.join(root_dir, "finviz")
@@ -95,6 +121,6 @@ def download_finviz():
 
 
 if __name__ == "__main__":
-    download_ishares()
+    download_iShares()
 
     download_finviz()
