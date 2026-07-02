@@ -49,15 +49,15 @@ def download_iShares():
             elif product in ["IVV", "IWB", "IWM", "IWV"]:
                 data_map = response.get("componentsByNameMap").get("holdings").get("containersByNameMap").get("all").get("dataPointsByNameMap")
 
-                ticker_df = [{"ticker": t, "name": n, "sector": s, "weight": w, "cusip": cusip, "isin": isin, "sedol": sedol}
-                             for t, n, s, w, cusip, isin, sedol, asset_class in zip(data_map.get("ticker").get("formattedValue"),
+                ticker_df = [{"ticker": t, "name": n, "sector": s, "asset_class": asset_class, "weight": w, "isin": isin, "cusip": cusip, "sedol": sedol}
+                             for t, n, s, asset_class, w, isin, cusip, sedol in zip(data_map.get("ticker").get("formattedValue"),
                                                                                     data_map.get("issueName").get("formattedValue"),
                                                                                     data_map.get("sectorName").get("formattedValue"),
+                                                                                    data_map.get("assetClass").get("formattedValue"),
                                                                                     data_map.get("holdingPercent").get("formattedValue"),
-                                                                                    data_map.get("cusip").get("formattedValue"),
                                                                                     data_map.get("isin").get("formattedValue"),
-                                                                                    data_map.get("sedol").get("formattedValue"),
-                                                                                    data_map.get("assetClass").get("formattedValue"))]
+                                                                                    data_map.get("cusip").get("formattedValue"),
+                                                                                    data_map.get("sedol").get("formattedValue"),)]
 
             ticker_df = pd.DataFrame(ticker_df)
             if ticker_df.empty: raise ValueError(f"[{product}] No data")
