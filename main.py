@@ -22,11 +22,11 @@ def download_iShares():
     base_url = "https://www.ishares.com/varnish-api/blk-one01-product-data/product-data/api/v2/get-product-data?appSubType=ISHARES&appType=PRODUCT_PAGE&component=holdings.all&targetSite=us-ishares&userType=individual&excludeContent=true&includeConfig=true"
 
     url_mapper = {
-        "CNDX": f"{base_url}&locale=en_GB&portfolioId=253741&asOfDate={asOfDate}",
-        "IVV": f"{base_url}&locale=en_US&portfolioId=239726&asOfDate={asOfDate}",
-        "IWB": f"{base_url}&locale=en_US&portfolioId=239707&asOfDate={asOfDate}",  # russel 1000
-        "IWM": f"{base_url}&locale=en_US&portfolioId=239710&asOfDate={asOfDate}",  # russel 2000
-        "IWV": f"{base_url}&locale=en_US&portfolioId=239714&asOfDate={asOfDate}",  # russel 3000
+        "CNDX": f"{base_url}&locale=en_GB&portfolioId=253741",
+        "IVV": f"{base_url}&locale=en_US&portfolioId=239726",
+        "IWB": f"{base_url}&locale=en_US&portfolioId=239707",  # russel 1000
+        "IWM": f"{base_url}&locale=en_US&portfolioId=239710",  # russel 2000
+        "IWV": f"{base_url}&locale=en_US&portfolioId=239714",  # russel 3000
     }
 
     pbar = tqdm(url_mapper.items(), total=len(url_mapper.keys()))
