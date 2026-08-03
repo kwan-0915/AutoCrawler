@@ -19,14 +19,14 @@ custom_headers = {
 }
 
 def download_iShares():
-    base_url = "https://www.ishares.com/varnish-api/blk-one01-product-data/product-data/api/v2/get-product-data?appSubType=ISHARES&appType=PRODUCT_PAGE&component=holdings.all&locale=en_US&targetSite=us-ishares&userType=individual&excludeContent=true&includeConfig=true"
+    base_url = "https://www.ishares.com/varnish-api/blk-one01-product-data/product-data/api/v2/get-product-data?appSubType=ISHARES&appType=PRODUCT_PAGE&component=holdings.all&targetSite=us-ishares&userType=individual&excludeContent=true&includeConfig=true"
 
     url_mapper = {
-        "CNDX": "https://www.ishares.com/uk/individual/en/products/253741/ishares-nasdaq-100-ucits-etf/1506575576011.ajax?tab=all&fileType=json",
-        "IVV": f"{base_url}&portfolioId=239726",
-        "IWB": f"{base_url}&portfolioId=239707",
-        "IWM": f"{base_url}&portfolioId=239710",
-        "IWV": f"{base_url}&portfolioId=239714"
+        "CNDX": f"{base_url}&locale=en_GB&portfolioId=253741&asOfDate={asOfDate}",
+        "IVV": f"{base_url}&locale=en_US&portfolioId=239726&asOfDate={asOfDate}",
+        "IWB": f"{base_url}&locale=en_US&portfolioId=239707&asOfDate={asOfDate}",  # russel 1000
+        "IWM": f"{base_url}&locale=en_US&portfolioId=239710&asOfDate={asOfDate}",  # russel 2000
+        "IWV": f"{base_url}&locale=en_US&portfolioId=239714&asOfDate={asOfDate}",  # russel 3000
     }
 
     pbar = tqdm(url_mapper.items(), total=len(url_mapper.keys()))
@@ -41,14 +41,18 @@ def download_iShares():
             if response.status_code != 200: raise ValueError("Invalid status code")
 
             response, ticker_df = json.loads(response.content), []
+            data_map = response.get("componentsByNameMap").get("holdings").get("containersByNameMap").get("all").get("dataPointsByNameMap")
 
             if product in ["CNDX"]:
-                ticker_df = [{"ticker": arr[0], "name": arr[1], "sector": arr[2], "asset_class": arr[3], "weight": arr[5].get("raw", -1.0), "isin": arr[8]}
-                             for arr in response.get("aaData")]
+                ticker_df = [{"ticker": t, "name": n, "sector": s, "weight": w, "ISIN": isin}
+                     for t, n, s, w, isin, asset_class in zip(data_map.get("ticker").get("formattedValue"),
+                                                              data_map.get("issueName").get("formattedValue"),
+                                                              data_map.get("sectorName").get("formattedValue"),
+                                                              data_map.get("holdingPercent").get("formattedValue"),
+                                                              data_map.get("isin").get("formattedValue"),
+                                                              data_map.get("assetClass").get("formattedValue")) if asset_class == "Equity" and t != "-"]
 
             elif product in ["IVV", "IWB", "IWM", "IWV"]:
-                data_map = response.get("componentsByNameMap").get("holdings").get("containersByNameMap").get("all").get("dataPointsByNameMap")
-
                 ticker_df = [{"ticker": t, "name": n, "sector": s, "asset_class": asset_class, "weight": w, "isin": isin, "cusip": cusip, "sedol": sedol}
                              for t, n, s, asset_class, w, isin, cusip, sedol in zip(data_map.get("ticker").get("formattedValue"),
                                                                                     data_map.get("issueName").get("formattedValue"),
