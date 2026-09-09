@@ -25,12 +25,13 @@ if __name__ == '__main__':
     if not len(root_file): raise ValueError(f"[{product}]: No data found between {start_date} - {end_date}")
 
     df = pd.concat([pd.read_csv(os.path.join(root_dir, f)) for f in sorted(root_file)], axis=0)
-    df = df.drop_duplicates(subset=["ticker", "isin"], keep="last").sort_values(by="ticker").reset_index(drop=True)
 
     if df.empty: raise ValueError(f"[{product}]: Failed to compress data, total files: {len(root_file)}")
     else:
         out_dir = os.path.join(data_dir, "lookup", product)
         if not os.path.exists(out_dir): os.makedirs(out_dir)
+
+        df = df.drop_duplicates(subset=["ticker", "isin"], keep="last").sort_values(by="ticker").reset_index(drop=True)
 
         df.to_csv(os.path.join(out_dir, f"{product}_{end_date}.csv"), index=False)
 
