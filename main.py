@@ -22,11 +22,13 @@ def download_iShares():
     base_url = "https://www.ishares.com/varnish-api/blk-one01-product-data/product-data/api/v2/get-product-data?appSubType=ISHARES&appType=PRODUCT_PAGE&component=holdings.all&targetSite=us-ishares&userType=individual&excludeContent=true&includeConfig=true"
 
     url_mapper = {
-        "CNDX": f"{base_url}&locale=en_GB&portfolioId=253741",
-        "IVV": f"{base_url}&locale=en_US&portfolioId=239726",
-        "IWB": f"{base_url}&locale=en_US&portfolioId=239707",  # russel 1000
-        "IWM": f"{base_url}&locale=en_US&portfolioId=239710",  # russel 2000
-        "IWV": f"{base_url}&locale=en_US&portfolioId=239714",  # russel 3000
+        "CNDX": f"{base_url}&locale=en_GB&portfolioId=253741&asOfDate={asOfDate}",  # Nasdaq 100
+        "IVV": f"{base_url}&locale=en_US&portfolioId=239726&asOfDate={asOfDate}",   # S&P 500
+        "IJH": f"{base_url}&locale=en_US&portfolioId=239763&asOfDate={asOfDate}",   # S&P 500 mid-cap
+        "IJR": f"{base_url}&locale=en_US&portfolioId=239774&asOfDate={asOfDate}",   # S&P 500 small-cap
+        "IWB": f"{base_url}&locale=en_US&portfolioId=239707&asOfDate={asOfDate}",   # Russell 1000
+        "IWM": f"{base_url}&locale=en_US&portfolioId=239710&asOfDate={asOfDate}",   # Russell 2000
+        "IWV": f"{base_url}&locale=en_US&portfolioId=239714&asOfDate={asOfDate}",   # Russell 3000
     }
 
     pbar = tqdm(url_mapper.items(), total=len(url_mapper.keys()))
@@ -53,13 +55,15 @@ def download_iShares():
                                                                       data_map.get("isin").get("formattedValue"),
                                                                       )]
 
-            elif product in ["IVV", "IWB", "IWM", "IWV"]:
+            elif product in ["IVV", "IJH", "IJR", "IWB", "IWM", "IWV"]:
+                w_key = "marketWeight" if product in ["IJH", "IJR"] else "holdingPercent"
+                
                 ticker_df = [{"ticker": t, "name": n, "sector": s, "asset_class": asset_class, "weight": w, "isin": isin, "cusip": cusip, "sedol": sedol}
                              for t, n, s, asset_class, w, isin, cusip, sedol in zip(data_map.get("ticker").get("formattedValue"),
                                                                                     data_map.get("issueName").get("formattedValue"),
                                                                                     data_map.get("sectorName").get("formattedValue"),
                                                                                     data_map.get("assetClass").get("formattedValue"),
-                                                                                    data_map.get("holdingPercent").get("formattedValue"),
+                                                                                    data_map.get(f"{w_key}").get("formattedValue"),
                                                                                     data_map.get("isin").get("formattedValue"),
                                                                                     data_map.get("cusip").get("formattedValue"),
                                                                                     data_map.get("sedol").get("formattedValue"),
