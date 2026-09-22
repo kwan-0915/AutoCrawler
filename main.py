@@ -22,13 +22,13 @@ def download_iShares():
     base_url = "https://www.ishares.com/varnish-api/blk-one01-product-data/product-data/api/v2/get-product-data?appSubType=ISHARES&appType=PRODUCT_PAGE&component=holdings.all&targetSite=us-ishares&userType=individual&excludeContent=true&includeConfig=true"
 
     url_mapper = {
-        "CNDX": f"{base_url}&locale=en_GB&portfolioId=253741&asOfDate={asOfDate}",  # Nasdaq 100
-        "IVV": f"{base_url}&locale=en_US&portfolioId=239726&asOfDate={asOfDate}",   # S&P 500
-        "IJH": f"{base_url}&locale=en_US&portfolioId=239763&asOfDate={asOfDate}",   # S&P 500 mid-cap
-        "IJR": f"{base_url}&locale=en_US&portfolioId=239774&asOfDate={asOfDate}",   # S&P 500 small-cap
-        "IWB": f"{base_url}&locale=en_US&portfolioId=239707&asOfDate={asOfDate}",   # Russell 1000
-        "IWM": f"{base_url}&locale=en_US&portfolioId=239710&asOfDate={asOfDate}",   # Russell 2000
-        "IWV": f"{base_url}&locale=en_US&portfolioId=239714&asOfDate={asOfDate}",   # Russell 3000
+        "CNDX": f"{base_url}&locale=en_GB&portfolioId=253741",  # Nasdaq 100
+        "IVV": f"{base_url}&locale=en_US&portfolioId=239726",   # S&P 500
+        "IJH": f"{base_url}&locale=en_US&portfolioId=239763",   # S&P 500 mid-cap
+        "IJR": f"{base_url}&locale=en_US&portfolioId=239774",   # S&P 500 small-cap
+        "IWB": f"{base_url}&locale=en_US&portfolioId=239707",   # Russell 1000
+        "IWM": f"{base_url}&locale=en_US&portfolioId=239710",   # Russell 2000
+        "IWV": f"{base_url}&locale=en_US&portfolioId=239714",   # Russell 3000
     }
 
     pbar = tqdm(url_mapper.items(), total=len(url_mapper.keys()))
