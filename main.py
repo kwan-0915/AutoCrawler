@@ -133,4 +133,4 @@ def download_finviz():
 if __name__ == "__main__":
     download_iShares()
 
-    download_finviz()
+    #download_finviz()
