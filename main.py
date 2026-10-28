@@ -4,8 +4,6 @@ import warnings
 import requests
 import pandas as pd
 from tqdm.auto import tqdm
-from bs4 import BeautifulSoup
-from pyfinviz import Screener
 
 warnings.filterwarnings("ignore")
 
@@ -31,6 +29,8 @@ def download_iShares():
         "IWV": f"{base_url}&locale=en_US&portfolioId=239714",   # Russell 3000
     }
 
+    cur_date = pd.Timestamp.now().__str__().split(" ")[0]
+
     pbar = tqdm(url_mapper.items(), total=len(url_mapper.keys()))
     for product, url in pbar:
         pbar.set_description(f"[iShares] Downloading {product}")
@@ -43,6 +43,10 @@ def download_iShares():
             if response.status_code != 200: raise ValueError("Invalid status code")
 
             response, ticker_df = json.loads(response.content), []
+
+            try: cur_date = response.get("componentsByNameMap").get("holdings").get("containersByNameMap").get("all").get("dataPointsByNameMap").get("asOfDate").get("value")
+            except (AttributeError, Exception) as e: pass
+
             data_map = response.get("componentsByNameMap").get("holdings").get("containersByNameMap").get("all").get("dataPointsByNameMap")
 
             if product in ["CNDX"]:
@@ -56,7 +60,7 @@ def download_iShares():
                                                                       )]
 
             elif product in ["IVV", "IJH", "IJR", "IWB", "IWM", "IWV"]:
-                w_key = "marketWeight" if product in ["IJH", "IJR"] else "holdingPercent"
+                w_key = "marketWeight" if product in ["IVV", "IJH", "IJR"] else "holdingPercent"
                 
                 ticker_df = [{"ticker": t, "name": n, "sector": s, "asset_class": asset_class, "weight": w, "isin": isin, "cusip": cusip, "sedol": sedol}
                              for t, n, s, asset_class, w, isin, cusip, sedol in zip(data_map.get("ticker").get("formattedValue"),
@@ -69,68 +73,17 @@ def download_iShares():
                                                                                     data_map.get("sedol").get("formattedValue"),
                                                                                     )]
 
+            if isinstance(cur_date, int): cur_date = str(pd.to_datetime(str(cur_date)).date())
+
             ticker_df = pd.DataFrame(ticker_df)
             if ticker_df.empty: raise ValueError(f"[{product}] No data")
 
             ticker_df = ticker_df.sort_values(by="ticker").reset_index(drop=True)
 
-            ticker_df.to_csv(os.path.join(dest_dir, f"{product}_{pd.Timestamp.now().__str__().split(' ')[0]}.csv"), index=False)
+            ticker_df.to_csv(os.path.join(dest_dir, f"{product}_{cur_date}.csv"), index=False)
 
         except Exception as e: print(f"[{product}] Error: {e}")
-
-def download_finviz():
-    finviz_dir = os.path.join(root_dir, "finviz")
-    if not os.path.exists(finviz_dir): os.makedirs(finviz_dir)
-
-    url = "https://finviz.com/screener"
-
-    response = requests.get(url=url, headers=custom_headers)
-    if response.status_code != 200: raise ValueError(f"Invalid status code, {response.status_code}")
-
-    soup = BeautifulSoup(response.text, "html.parser")
-    num_page = soup.find_all("a", {"class": "screener-pages"})[-2].text
-
-    if not num_page.isnumeric(): raise ValueError(f"Invalid page number, {num_page}")
-
-    pages = [i for i in range(1, int(num_page) + 1)]
-
-    finviz_data = {
-        "overview": [],
-        "valuation": [],
-        "financial": [],
-        "performance": [],
-        "technical": [],
-    }
-
-    finviz_view = {
-        "overview": Screener.ViewOption.OVERVIEW,
-        "valuation": Screener.ViewOption.VALUATION,
-        "financial": Screener.ViewOption.FINANCIAL,
-        "performance": Screener.ViewOption.PERFORMANCE,
-        "technical": Screener.ViewOption.TECHNICAL,
-    }
-
-    for k, v in finviz_data.items():
-        for i in tqdm(pages, total=len(pages), desc=f"[Finviz] Downloading {k.title()}"):
-            try:
-                s = Screener(pages=[i], view_option=finviz_view[k])
-
-                finviz_data[k].append(s.data_frames[i])
-
-            except Exception as e:
-                print(f"[{k.title()}] Error: {e}, page {i}")
-
-        df = pd.concat(finviz_data[k], ignore_index=True, axis=0)
-        if not df.empty:
-            if "No" in df.columns.tolist(): df = df.drop(columns=["No"], axis=1)
-
-            dest_dir = os.path.join(finviz_dir, k.upper())
-            if not os.path.exists(dest_dir): os.makedirs(dest_dir)
-
-            df.to_csv(os.path.join(dest_dir, f"{k.title()}_{pd.Timestamp.now().__str__().split(' ')[0]}.csv"), index=False)
 
 
 if __name__ == "__main__":
     download_iShares()
-
-    #download_finviz()
