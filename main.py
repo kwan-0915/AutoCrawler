@@ -17,16 +17,18 @@ custom_headers = {
 }
 
 def download_iShares():
-    base_url = "https://www.ishares.com/varnish-api/blk-one01-product-data/product-data/api/v2/get-product-data?appSubType=ISHARES&appType=PRODUCT_PAGE&component=holdings.all&targetSite=us-ishares&userType=individual&excludeContent=true&includeConfig=true"
+    url_prefix = "https://www.ishares.com/varnish-api"
+
+    url_suffix = "product-data/api/v2/get-product-data?appSubType=ISHARES&appType=PRODUCT_PAGE&component=holdings.all&userType=individual&excludeContent=true&includeConfig=true"
 
     url_mapper = {
-        "CNDX": f"{base_url}&locale=en_GB&portfolioId=253741",  # Nasdaq 100
-        "IVV": f"{base_url}&locale=en_US&portfolioId=239726",   # S&P 500
-        "IJH": f"{base_url}&locale=en_US&portfolioId=239763",   # S&P 500 mid-cap
-        "IJR": f"{base_url}&locale=en_US&portfolioId=239774",   # S&P 500 small-cap
-        "IWB": f"{base_url}&locale=en_US&portfolioId=239707",   # Russell 1000
-        "IWM": f"{base_url}&locale=en_US&portfolioId=239710",   # Russell 2000
-        "IWV": f"{base_url}&locale=en_US&portfolioId=239714",   # Russell 3000
+        "CNDX": f"{url_prefix}/uk-retail01-product-data/{url_suffix}&targetSite=ishares-uk&locale=en_GB&portfolioId=253741",
+        "IVV": f"{url_prefix}/blk-one01-product-data/{url_suffix}&targetSite=us-ishares&locale=en_US&portfolioId=239726",  # S&P 500
+        "IJH": f"{url_prefix}/blk-one01-product-data/{url_suffix}&targetSite=us-ishares&locale=en_US&portfolioId=239763",  # S&P 500 mid-cap
+        "IJR": f"{url_prefix}/blk-one01-product-data/{url_suffix}&targetSite=us-ishares&locale=en_US&portfolioId=239774",  # S&P 500 small-cap
+        "IWB": f"{url_prefix}/blk-one01-product-data/{url_suffix}&targetSite=us-ishares&locale=en_US&portfolioId=239707",  # Russell 1000
+        "IWM": f"{url_prefix}/blk-one01-product-data/{url_suffix}&targetSite=us-ishares&locale=en_US&portfolioId=239710",  # Russell 2000
+        "IWV": f"{url_prefix}/blk-one01-product-data/{url_suffix}&targetSite=us-ishares&locale=en_US&portfolioId=239714",  # Russell 3000
     }
 
     cur_date = pd.Timestamp.now().__str__().split(" ")[0]
@@ -60,7 +62,7 @@ def download_iShares():
                                                                       )]
 
             elif product in ["IVV", "IJH", "IJR", "IWB", "IWM", "IWV"]:
-                w_key = "marketWeight" if product in ["IVV", "IJH", "IJR"] else "holdingPercent"
+                w_key = "marketWeight" if "marketWeight" in data_map.keys() else "holdingPercent"
                 
                 ticker_df = [{"ticker": t, "name": n, "sector": s, "asset_class": asset_class, "weight": w, "isin": isin, "cusip": cusip, "sedol": sedol}
                              for t, n, s, asset_class, w, isin, cusip, sedol in zip(data_map.get("ticker").get("formattedValue"),
